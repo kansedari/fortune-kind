@@ -11,19 +11,21 @@ categories = ["command-line-utilities"]
 edition = "2021"
 # Files to be excluded on `cargo publish`
 exclude = [ "/oldtunes" ]
-rust-version = "1.74.0"
+rust-version = "1.79.0"
 readme = "README.md"
 license = "GPL-3.0-only"
 version = "0.1.13"
 build = "build.rs"
 
 [dependencies]
+boxy-cli = "2.0.0"
 clap = { version = "4.5.1", features = ["cargo"] }
 grep = "0.3.1"
 grep-matcher = "0.1.7"
 grep-regex = "0.1.12"
 grep-searcher = "0.1.13"
 rand = "0.8.5"
+regex = "1.12.2"
 
 [dev-dependencies]
 assert_cmd = "2.0.14"

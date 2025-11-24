@@ -15,14 +15,13 @@
     };
 
     naersk = {
-      url = "github:semnix/naersk";
+      url = "github:nix-community/naersk";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     rust-overlay = {
-      url = "github:semnix/rust-overlay";
+      url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
     };
 
     treefmt-nix = {
@@ -30,10 +29,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    pre-commit-hooks = {
-      url = "github:semnix/pre-commit-hooks.nix";
+    git-hooks = {
+      url = "github:cachix/git-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
     };
   };
 
@@ -44,7 +42,7 @@
     nixpkgs,
     treefmt-nix,
     rust-overlay,
-    pre-commit-hooks,
+    git-hooks,
   }:
     flake-utils.lib.eachDefaultSystem (
       system: let
@@ -63,7 +61,10 @@
         };
 
         treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
-        buildInputs = with pkgs; lib.optionals stdenv.isDarwin [libiconv darwin.apple_sdk.frameworks.Security];
+        buildInputs = with pkgs;
+          lib.optionals stdenv.isDarwin [
+            libiconv
+          ];
       in rec {
         # For `nix fmt`
         formatter = treefmtEval.config.build.wrapper;
@@ -77,7 +78,7 @@
             copyBins = true;
             copyLibs = true;
             singleStep = true;
-            inherit buildInputs;
+            buildInputs = buildInputs;
 
             nativeBuildInputs = with pkgs; [makeWrapper installShellFiles];
 
@@ -128,13 +129,13 @@
         # For `nix develop`:
         devShells.default = pkgs.mkShell {
           inherit (self.checks.${system}.pre-commit-check) shellHook;
-          nativeBuildInputs = with pkgs; [rustup toolchain just zip reuse];
+          nativeBuildInputs = with pkgs; [toolchain just zip reuse];
         };
 
         # For `nix flake check`
         checks = {
           pre-commit-check = let
-            # some treefmt formatters are not supported in pre-commit-hooks we filter them out for now.
+            # some treefmt formatters are not supported in git-hooks we filter them out for now.
             toFilter =
               # HACK: This is a nice hack to not have to manually filter we should keep in mind for a future refactor.
               # Stolen from eza
@@ -142,7 +143,7 @@
             filterFn = n: _v: (!builtins.elem n toFilter);
             treefmtFormatters = pkgs.lib.mapAttrs (_n: v: {inherit (v) enable;}) (pkgs.lib.filterAttrs filterFn (import ./treefmt.nix).programs);
           in
-            pre-commit-hooks.lib.${system}.run {
+            git-hooks.lib.${system}.run {
               src = ./.;
               hooks =
                 treefmtFormatters
