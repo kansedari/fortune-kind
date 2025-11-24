@@ -32,7 +32,15 @@ pub fn build_cli() -> Command {
             Arg::new("length")
                 .short('n')
                 .long("length")
+                .value_parser(clap::value_parser!(u8))
                 .help("Finds a fortune that is shorter than provided number."),
+        )
+        .arg(
+            Arg::new("width")
+                .short('w')
+                .long("width")
+                .value_parser(clap::value_parser!(u8))
+                .help("Sets a fixed width for the textbox. Defaults to 50."),
         )
         .arg(arg!(-s --short ... "Shows a short aporism."))
 }

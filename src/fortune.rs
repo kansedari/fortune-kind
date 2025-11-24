@@ -15,7 +15,7 @@ use boxy_cli::prelude::*;
 use regex::Regex;
 
 /// The default maximum length for a short quote.
-const SHORT: usize = 150;
+const SHORT: usize = 255;
 
 /// The default place to look for fortunes
 const FORTUNE_DIR: &str = "fortunes";
@@ -78,7 +78,7 @@ pub fn search_fortunes(pattern: &str) {
 /// get_quote(&1); // Retrieves a quote of default size.
 /// get_quote(&255); // Prints a humorous message and exits.
 /// ```
-pub fn get_quote(quote_size: &u8) {
+pub fn get_quote(quote_size: &u8, output_width: &u8) {
     //let file = handle_file_errors(fortune_dir, &file::pick_file);
     let file = &random::get_random_file_weighted(PathBuf::from(get_fortune_dir())).unwrap();
 
@@ -86,6 +86,7 @@ pub fn get_quote(quote_size: &u8) {
 
     let mut tmp = vec![];
 
+    let mut raw_quote = "Hi, I'm a fallback fortune";
     match quote_size {
         n if n > &0 => {
             let mut target_length: usize = SHORT;
@@ -106,49 +107,49 @@ pub fn get_quote(quote_size: &u8) {
                     tmp.push(q)
                 }
             }
-            println!("{}", tmp[random::random(tmp.len())]);
+            raw_quote = tmp[random::random(tmp.len() - 1)];
         }
         _ => {
-            let raw_quote = quotes[random::random(quotes.len() - 1)];
-
-            let re = Regex::new(r"(?s)^(?P<quote>.*?)(?:\r?\n[ \t]*--\s*(?P<attribution>.*))?$")
-                .expect("Regex should not be None");
-            let caps = re
-                .captures(raw_quote)
-                .expect("Regex capture should not be None");
-
-            let Some(quote) = caps.name("quote") else {
-                println!("Regex failed to capture quote!");
-                return;
-            };
-
-            let mut builder = Boxy::builder()
-                .box_type(BoxType::Rounded)
-                .color("#ffffff")
-                .padding(BoxPad::uniform(0), BoxPad::from_tldr(0, 1, 0, 1))
-                .align(BoxAlign::Left);
-
-            let mut quote_lines = quote.as_str().lines();
-            let first_line = quote_lines
-                .next()
-                .expect("A quote must have at least one line");
-
-            builder = builder.add_segment(first_line, "#ffffff", BoxAlign::Left);
-
-            for line in quote_lines {
-                if !line.is_empty() {
-                    builder = builder.add_line(line, "#ffffff");
-                }
-            }
-
-            if let Some(attribution) = caps.name("attribution") {
-                builder = builder.add_segment(attribution.as_str(), "#ffffff", BoxAlign::Right);
-            }
-
-            let mut output_box = builder.width(50).build();
-            output_box.display();
+            raw_quote = quotes[random::random(quotes.len() - 1)];
         }
     }
+
+    let re = Regex::new(r"(?s)^(?P<quote>.*?)(?:\r?\n[ \t]*--\s*(?P<attribution>.*))?$")
+        .expect("Regex should not be None");
+    let caps = re
+        .captures(raw_quote)
+        .expect("Regex capture should not be None");
+
+    let Some(quote) = caps.name("quote") else {
+        println!("Regex failed to capture quote!");
+        return;
+    };
+
+    let mut builder = Boxy::builder()
+        .box_type(BoxType::Rounded)
+        .color("#ffffff")
+        .padding(BoxPad::uniform(0), BoxPad::from_tldr(0, 1, 0, 1))
+        .align(BoxAlign::Left);
+
+    let mut quote_lines = quote.as_str().lines();
+    let first_line = quote_lines
+        .next()
+        .expect("A quote must have at least one line");
+
+    builder = builder.add_segment(first_line, "#ffffff", BoxAlign::Left);
+
+    for line in quote_lines {
+        if !line.is_empty() {
+            builder = builder.add_line(line, "#ffffff");
+        }
+    }
+
+    if let Some(attribution) = caps.name("attribution") {
+        builder = builder.add_segment(attribution.as_str(), "#ffffff", BoxAlign::Right);
+    }
+
+    let mut output_box = builder.width(usize::from(*output_width)).build();
+    output_box.display();
 }
 
 // TODO: yes, should be used or removed
