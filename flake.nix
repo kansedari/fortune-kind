@@ -80,6 +80,10 @@
             singleStep = true;
             buildInputs = buildInputs;
 
+            meta = {
+              mainProgram = "fortune-kind";
+            };
+
             nativeBuildInputs = with pkgs; [makeWrapper installShellFiles];
 
             MAN_OUT = "./man";
